@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ContentPiece {
+  id             String    @id @default(cuid())
+  ageBand        String    // "6-8" | "9-12" | "13-16"
+  title          String
+  body           String
+  question1      String
+  question2      String
+  question3      String
+  topicCategory  String
+  publishDate    DateTime?
+  status         String    @default("draft") // "draft" | "approved" | "published"
+  generatedAt    DateTime  @default(now())
+  approvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  dailyGridId    String?
+  dailyGrid      DailyGrid? @relation(fields: [dailyGridId], references: [id])
+}
+
+model DailyGrid {
+  id          String         @id @default(cuid())
+  date        DateTime
+  ageBand     String         // "6-8" | "9-12" | "13-16"
+  publishedAt DateTime?
+  pieces      ContentPiece[]
+
+  @@unique([date, ageBand])
+}

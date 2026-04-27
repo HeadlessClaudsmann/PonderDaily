@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+/* ─── Ponder Daily Colour System ─────────────────────────────────────────────
+   60% dominant  – warm cream/parchment background
+   30% mid       – soft amber/ochre for surfaces and nav
+   10% highlight – deep teal accent for CTAs and question marks
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* 60 – dominant */
+  --pd-bg:        #faf6ef;
+  --pd-bg-alt:    #f2ead9;
+  /* 30 – mid */
+  --pd-amber:     #e8a030;
+  --pd-amber-dark:#c47d10;
+  --pd-surface:   #fff8ec;
+  /* 10 – highlight */
+  --pd-teal:      #2a7a6e;
+  --pd-teal-light:#3da394;
+
+  /* Age-band accent overrides (overlay on mid) */
+  --pd-68-accent:   #f87c52;   /* warm orange  – young, playful */
+  --pd-912-accent:  #4e9bbf;   /* sky blue     – curious, open */
+  --pd-1316-accent: #7c5cbf;   /* deep violet  – thoughtful, complex */
+
+  /* Text */
+  --pd-ink:       #2c2416;
+  --pd-ink-muted: #7a6a52;
+}
+
+@theme inline {
+  --color-background:  var(--pd-bg);
+  --color-foreground:  var(--pd-ink);
+  --color-amber:       var(--pd-amber);
+  --color-teal:        var(--pd-teal);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--pd-bg);
+  color: var(--pd-ink);
+  font-family: Georgia, "Times New Roman", serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Readable prose default */
+p {
+  line-height: 1.75;
+}
+
+/* Age-band page body tints */
+body[data-band="6-8"]   { --pd-accent: var(--pd-68-accent);   }
+body[data-band="9-12"]  { --pd-accent: var(--pd-912-accent);  }
+body[data-band="13-16"] { --pd-accent: var(--pd-1316-accent); }
