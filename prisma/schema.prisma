@@ -18,6 +18,7 @@ model ContentPiece {
   topicCategory  String
   publishDate    DateTime?
   status         String    @default("draft") // "draft" | "approved" | "published"
+  evergreen      Boolean   @default(false)   // eligible to recycle into future schedules
   generatedAt    DateTime  @default(now())
   approvedAt     DateTime?
   createdAt      DateTime  @default(now())

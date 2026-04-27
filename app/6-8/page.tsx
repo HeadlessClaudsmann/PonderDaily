@@ -1,4 +1,4 @@
-import { getTodayGrid } from "@/lib/grid";
+import { getGrid } from "@/lib/grid";
 import BandPage from "@/components/BandPage";
 
 export const metadata = {
@@ -9,7 +9,7 @@ export const metadata = {
 export const revalidate = 3600;
 
 export default async function Band68Page() {
-  const grid = await getTodayGrid("6-8");
+  const grid = await getGrid("6-8");
   return (
     <BandPage
       ageBand="6-8"
