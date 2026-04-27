@@ -35,7 +35,9 @@ export async function generateContentPiece(
   ageBand: AgeBand,
   topicCategory: TopicCategory
 ): Promise<GeneratedPiece> {
-  const client = new Anthropic();
+  const apiKey = process.env.PD_ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("PD_ANTHROPIC_API_KEY is not set");
+  const client = new Anthropic({ apiKey });
 
   const prompt = `You are generating content for Ponder Daily, a free educational website for curious kids aged 6–16.
 
@@ -73,10 +75,13 @@ Return ONLY valid JSON with these exact keys:
     messages: [{ role: "user", content: prompt }],
   });
 
-  const text =
+  const raw =
     message.content[0].type === "text" ? message.content[0].text : "";
 
-  const parsed = JSON.parse(text.trim()) as GeneratedPiece;
+  // Strip markdown code fences if the model returns them despite instructions
+  const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
+  const parsed = JSON.parse(text) as GeneratedPiece;
 
   if (
     !parsed.title ||
