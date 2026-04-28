@@ -1,5 +1,5 @@
 import { getGrid } from "@/lib/grid";
-import BandPage from "@/components/BandPage";
+import BandSwitcher from "@/components/BandSwitcher";
 
 export const metadata = {
   title: "Ages 9–12 — Ponder Daily",
@@ -10,13 +10,5 @@ export const revalidate = 3600;
 
 export default async function Band912Page() {
   const grid = await getGrid("9-12");
-  return (
-    <BandPage
-      ageBand="9-12"
-      label="Ages 9–12"
-      tagline="Real events, how things work, and questions worth arguing about."
-      accentColor="var(--pd-912-accent)"
-      pieces={grid?.pieces ?? []}
-    />
-  );
+  return <BandSwitcher initialBand="9-12" initialPieces={grid?.pieces ?? []} />;
 }
