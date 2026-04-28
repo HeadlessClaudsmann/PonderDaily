@@ -130,32 +130,6 @@ export default function BandSwitcher({ initialBand, initialPieces }: Props) {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      {/* Inline band picker tabs */}
-      <div className="flex gap-2 mb-8 flex-wrap">
-        {(["6-8", "9-12", "13-16"] as Band[]).map((band) => {
-          const m = BAND_META[band];
-          const active = band === activeBand;
-          return (
-            <motion.button
-              key={band}
-              onClick={() => switchBand(band)}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200"
-              style={{
-                background: active ? m.accent : "var(--pd-surface)",
-                color: active ? "#fff" : "var(--pd-ink-muted)",
-                border: `2px solid ${active ? m.accent : "var(--pd-bg-alt)"}`,
-              }}
-              aria-current={active ? "page" : undefined}
-            >
-              <span>{m.emoji}</span>
-              <span>{m.label}</span>
-            </motion.button>
-          );
-        })}
-      </div>
-
       {/* Animated header */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
