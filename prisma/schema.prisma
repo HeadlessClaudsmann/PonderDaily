@@ -16,6 +16,8 @@ model ContentPiece {
   question2      String
   question3      String
   topicCategory  String
+  contentType    String    @default("article") // "article" | "puzzle" | "bio" | "fact"
+  emoji          String    @default("")        // single emoji chosen by Claude to represent the piece
   publishDate    DateTime?
   status         String    @default("draft") // "draft" | "approved" | "published"
   evergreen      Boolean   @default(false)   // eligible to recycle into future schedules

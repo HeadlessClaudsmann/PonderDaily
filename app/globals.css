@@ -7,7 +7,7 @@
    ─────────────────────────────────────────────────────────────────────────── */
 :root {
   /* 60 – dominant */
-  --pd-bg:        #faf6ef;
+  --pd-bg:        #ffe4e6;
   --pd-bg-alt:    #f2ead9;
   /* 30 – mid */
   --pd-amber:     #e8a030;
@@ -58,3 +58,25 @@ p {
 body[data-band="6-8"]   { --pd-accent: var(--pd-68-accent);   }
 body[data-band="9-12"]  { --pd-accent: var(--pd-912-accent);  }
 body[data-band="13-16"] { --pd-accent: var(--pd-1316-accent); }
+
+/* ── Mondrian grid ────────────────────────────────────────────────────────── */
+.mondri-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .mondri-grid {
+    grid-template-columns: repeat(12, 1fr);
+    /* minmax allows rows to grow when an expanded card needs more height */
+    grid-template-rows: repeat(9, minmax(calc(100vh / 9), auto));
+  }
+
+  .mondri-cell {
+    grid-column: var(--col-start, 1) / span var(--col-span, 12);
+    grid-row: var(--row-start, 1) / span var(--row-span, 1);
+    min-height: 0;
+    min-width: 0;
+  }
+}

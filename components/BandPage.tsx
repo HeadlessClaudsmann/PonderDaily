@@ -127,7 +127,12 @@ export default function BandPage({ ageBand, label, tagline, accentColor, pieces,
           </p>
         </div>
       ) : (
-        <PonderGrid pieces={pieces} accentColor={accentColor} />
+        <PonderGrid
+          pieces={pieces}
+          accentColor={accentColor}
+          ageBand={ageBand as "6-8" | "9-12" | "13-16"}
+          tagline={tagline}
+        />
       )}
 
       <p className="mt-10 text-xs text-center" style={{ color: "var(--pd-ink-muted)" }}>

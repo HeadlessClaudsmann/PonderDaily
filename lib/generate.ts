@@ -29,6 +29,7 @@ type GeneratedPiece = {
   question1: string;
   question2: string;
   question3: string;
+  emoji: string;
 };
 
 export async function generateContentPiece(
@@ -64,8 +65,11 @@ Return ONLY valid JSON with these exact keys:
   "body": "",
   "question1": "",
   "question2": "",
-  "question3": ""
-}`;
+  "question3": "",
+  "emoji": ""
+}
+
+For "emoji": choose a single emoji that best represents the specific subject of this piece — the actual animal, object, person, or concept (e.g. 🐙 for octopus, 🌋 for volcano, ⚖️ for justice). Not a generic category symbol.`;
 
   const message = await client.messages.create({
     model: "claude-sonnet-4-5",
@@ -83,15 +87,10 @@ Return ONLY valid JSON with these exact keys:
 
   const parsed = JSON.parse(text) as GeneratedPiece;
 
-  if (
-    !parsed.title ||
-    !parsed.body ||
-    !parsed.question1 ||
-    !parsed.question2 ||
-    !parsed.question3
-  ) {
+  if (!parsed.title || !parsed.body || !parsed.question1 || !parsed.question2 || !parsed.question3) {
     throw new Error("Generated piece missing required fields");
   }
+  if (!parsed.emoji) parsed.emoji = "💭";
 
   return parsed;
 }

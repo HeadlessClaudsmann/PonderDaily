@@ -13,6 +13,7 @@ type ContentPiece = {
   question2: string;
   question3: string;
   topicCategory: string;
+  emoji?: string;
 };
 
 type Band = "6-8" | "9-12" | "13-16";
@@ -130,39 +131,7 @@ export default function BandSwitcher({ initialBand, initialPieces }: Props) {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      {/* Animated header */}
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={`header-${activeBand}`}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0, transition: { duration: 0.25, delay: 0.05 } }}
-          exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
-          className="mb-8"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <motion.div
-              className="w-3 h-3 rounded-full"
-              style={{ background: meta.accent }}
-              layoutId="band-dot"
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            />
-            <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: meta.accent }}>
-              {meta.label}
-            </p>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-1" style={{ color: "var(--pd-ink)" }}>
-            Today&apos;s Ponders
-          </h1>
-          <p className="text-base" style={{ color: "var(--pd-ink-muted)" }}>
-            {meta.tagline}
-          </p>
-          <p className="text-sm mt-1" style={{ color: "var(--pd-ink-muted)" }}>
-            {fmt(new Date())}
-          </p>
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Animated grid */}
+      {/* Animated grid — tagline + date live inside as a HeroCell */}
       <AnimatePresence mode="wait" custom={direction} initial={false}>
         <motion.div
           key={activeBand}
@@ -174,17 +143,16 @@ export default function BandSwitcher({ initialBand, initialPieces }: Props) {
         >
           {loading ? (
             <GridSkeleton accent={meta.accent} />
-          ) : pieces.length === 0 ? (
-            <EmptyState isToday />
           ) : (
-            <PonderGrid pieces={pieces} accentColor={meta.accent} />
+            <PonderGrid
+              pieces={pieces}
+              accentColor={meta.accent}
+              ageBand={activeBand}
+              tagline={meta.tagline}
+            />
           )}
         </motion.div>
       </AnimatePresence>
-
-      <p className="mt-10 text-xs text-center" style={{ color: "var(--pd-ink-muted)" }}>
-        Tap any card to read the full piece and see the questions. Talk about it — no typing required.
-      </p>
     </div>
   );
 }
