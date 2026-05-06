@@ -63,14 +63,17 @@ body[data-band="13-16"] { --pd-accent: var(--pd-1316-accent); }
 .mondri-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 10px;
+  padding: 0 16px;
 }
 
 @media (min-width: 640px) {
   .mondri-grid {
     grid-template-columns: repeat(12, 1fr);
     /* minmax allows rows to grow when an expanded card needs more height */
-    grid-template-rows: repeat(9, minmax(calc(100vh / 9), auto));
+    grid-template-rows: repeat(9, minmax(calc((100vh - 80px) / 9), auto));
+    gap: 10px;
+    padding: 0 50px;
   }
 
   .mondri-cell {

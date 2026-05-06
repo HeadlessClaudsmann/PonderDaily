@@ -9,17 +9,22 @@ export async function getGrid(ageBand: AgeBand, date?: Date) {
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
 
+  const include = {
+    pieces: { orderBy: { createdAt: "asc" as const } },
+  };
+
+  // Try today first
+  const today = await prisma.dailyGrid.findFirst({
+    where: { ageBand, date: { gte: start, lt: end }, publishedAt: { not: null } },
+    include,
+  });
+  if (today) return today;
+
+  // Fall back to the most recent published grid for this band
   return prisma.dailyGrid.findFirst({
-    where: {
-      ageBand,
-      date: { gte: start, lt: end },
-      publishedAt: { not: null },
-    },
-    include: {
-      pieces: {
-        orderBy: { createdAt: "asc" },
-      },
-    },
+    where: { ageBand, publishedAt: { not: null } },
+    orderBy: { date: "desc" },
+    include,
   });
 }
 
