@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
-import SiteNav from "@/components/SiteNav";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -19,27 +18,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${nunito.variable} h-full`}>
       <body
         className="min-h-full flex flex-col"
         style={{ fontFamily: "var(--font-nunito), Georgia, serif" }}
       >
-        <SiteNav />
-        <main className="flex-1">{children}</main>
-        <footer className="py-8 px-6 text-center text-sm" style={{ color: "var(--pd-ink-muted)" }}>
-          <p>
-            Ponder Daily is free forever · no accounts · no tracking · no data stored ·{" "}
-            <a href="/about" className="underline hover:opacity-70">
-              about &amp; privacy
-            </a>
-          </p>
-        </footer>
+        {children}
       </body>
     </html>
   );

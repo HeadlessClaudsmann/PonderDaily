@@ -83,3 +83,75 @@ body[data-band="13-16"] { --pd-accent: var(--pd-1316-accent); }
     min-width: 0;
   }
 }
+
+/* Grid designer – clock-wipe long-press animation */
+@property --pd-wipe {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes pd-clock-wipe {
+  from { --pd-wipe: 0deg; }
+  to   { --pd-wipe: 360deg; }
+}
+
+/* ── Grid designer sidebar scrollbar ─────────────────────────────────────── */
+.pd-sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.pd-sidebar-scroll::-webkit-scrollbar-track {
+  background: #16162a;
+}
+.pd-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+}
+.pd-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ── test3 hover tint ────────────────────────────────────────────────────── */
+/* filter:brightness works on every cell colour — dark or light             */
+.test3-cell {
+  cursor: pointer;
+  transition: filter 0.13s ease;
+}
+.test3-cell:hover {
+  filter: brightness(1.12);
+}
+
+/* ── test3 responsive layout ─────────────────────────────────────────────── */
+
+/* ≤ 900px — tighten horizontal padding */
+@media (max-width: 900px) {
+  .test3-wrapper {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+/* ≤ 640px — abandon CSS grid, stack cells vertically */
+@media (max-width: 640px) {
+  .test3-wrapper {
+    height: auto !important;
+    min-height: 100dvh;
+    padding: 8px 10px !important;
+  }
+  .test3-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: none !important;
+    gap: 8px;
+  }
+  .test3-cell {
+    grid-column: unset !important;
+    grid-row: unset !important;
+    min-height: 110px;
+    width: 100%;
+  }
+  /* title cell always first regardless of grid row position */
+  .test3-title-cell {
+    order: -1;
+  }
+}
