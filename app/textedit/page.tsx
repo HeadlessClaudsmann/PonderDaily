@@ -307,7 +307,7 @@ function NewDayForm({ date, onCreated }: {
             color: theme && !busy ? DK.ink : DK.muted,
             cursor: (theme && !busy) ? "pointer" : "default",
             transition: "all 0.15s", fontFamily: "system-ui, sans-serif" }}>
-          {busy ? "Re-rolling…" : "✦ Re-roll"}
+          {busy ? "Generating…" : "✦ Generate"}
         </button>
       </div>
       {genError && (
