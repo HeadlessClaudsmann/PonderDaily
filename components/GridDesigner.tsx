@@ -32,6 +32,8 @@ export type GLayout = {
   cols:      number;
   rows:      number;
   snapshots: GSnapshot[];
+  /** ISO date "YYYY-MM-DD" — marks this as a date-specific editable copy, not a template */
+  dateKey?:  string;
 };
 
 type Store = {
@@ -872,6 +874,9 @@ export default function GridDesigner() {
   const [renameVal, setRenameVal]      = useState("");
   const [dragOverId, setDragOverId]    = useState<string | null>(null);
   const dragSrcId = useRef<string | null>(null);
+  const [dateInput, setDateInput]      = useState(() => new Date().toISOString().slice(0, 10));
+  const [dateBusy, setDateBusy]        = useState(false);
+  const [dateMsg, setDateMsg]          = useState("");
 
   // Persist on every change
   useEffect(() => { saveStore(store); }, [store]);
@@ -959,6 +964,55 @@ export default function GridDesigner() {
 
   const handleSetToday = () => {
     mutateStore(s => ({ ...s, todayId: activeId }));
+  };
+
+  // ── Date layout: load frozen snapshot from a content date ────────────────
+  const handleLoadDateLayout = async (date: string) => {
+    if (!date) return;
+    // If already loaded, just select it
+    const existing = store.layouts.find(l => l.dateKey === date);
+    if (existing) {
+      setActiveId(existing.id); setSnapIdx(0); setSelectedId(null); return;
+    }
+    setDateBusy(true); setDateMsg("");
+    try {
+      const res = await fetch(`/api/content?date=${date}`, { cache: "no-store" });
+      if (!res.ok) { setDateMsg(res.status === 404 ? `No content for ${date}` : "Fetch failed"); return; }
+      const content = await res.json();
+      if (!content.layout) { setDateMsg(`No frozen layout on ${date} — assign one in textedit first`); return; }
+      const newLayout: GLayout = {
+        id:       uid(),
+        name:     `📅 ${date}`,
+        dateKey:  date,
+        cols:     content.layout.cols,
+        rows:     content.layout.rows,
+        snapshots: [{ id: uid(), label: "State 1", cells: content.layout.cells }],
+      };
+      mutateStore(s => ({ ...s, layouts: [...s.layouts, newLayout] }));
+      setActiveId(newLayout.id); setSnapIdx(0); setSelectedId(null);
+    } finally { setDateBusy(false); }
+  };
+
+  // ── Date layout: write edited layout back to content JSON ─────────────────
+  const handleSaveDateLayout = async () => {
+    if (!layout?.dateKey) return;
+    setDateBusy(true); setDateMsg("");
+    try {
+      const date = layout.dateKey;
+      const res = await fetch(`/api/content?date=${date}`, { cache: "no-store" });
+      if (!res.ok) { setDateMsg("Failed to read content"); return; }
+      const content = await res.json();
+      const saveRes = await fetch(`/api/content?date=${date}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...content,
+          layout: { cols: layout.cols, rows: layout.rows, cells: snapshot?.cells ?? [] },
+        }),
+      });
+      setDateMsg(saveRes.ok ? "Saved ✓" : "Save failed");
+      setTimeout(() => setDateMsg(""), 2500);
+    } finally { setDateBusy(false); }
   };
 
   const handleReorderLayout = (srcId: string, targetId: string) => {
@@ -1250,8 +1304,12 @@ export default function GridDesigner() {
                   padding:"6px 8px", borderRadius:6, marginBottom:2,
                   background: dragOverId===l.id
                     ? "rgba(42,122,110,0.35)"
-                    : l.id===activeId ? "rgba(42,122,110,0.2)" : "transparent",
-                  border:`1px solid ${l.id===activeId ? "rgba(42,122,110,0.4)" : "transparent"}`,
+                    : l.id===activeId
+                      ? (l.dateKey ? "rgba(100,140,255,0.2)" : "rgba(42,122,110,0.2)")
+                      : (l.dateKey ? "rgba(100,140,255,0.07)" : "transparent"),
+                  border:`1px solid ${l.id===activeId
+                    ? (l.dateKey ? "rgba(100,140,255,0.4)" : "rgba(42,122,110,0.4)")
+                    : "transparent"}`,
                   cursor:"pointer",
                   display:"flex", alignItems:"center", gap:6,
                 }}
@@ -1315,11 +1373,52 @@ export default function GridDesigner() {
             {layout && (
               <>
                 <Btn onClick={handleDuplicateLayout} small>Duplicate</Btn>
-                <Btn onClick={handleSetToday} small active={store.todayId===activeId}>
-                  {store.todayId===activeId ? "★ Today" : "Set as today"}
-                </Btn>
+                {!layout.dateKey && (
+                  <Btn onClick={handleSetToday} small active={store.todayId===activeId}>
+                    {store.todayId===activeId ? "★ Today" : "Set as today"}
+                  </Btn>
+                )}
                 <Btn onClick={handleDeleteLayout} small danger>Delete</Btn>
               </>
+            )}
+          </div>
+
+          {/* ── Date layouts ──────────────────────────────────────────── */}
+          <div style={{padding:"8px 10px", display:"flex", flexDirection:"column", gap:6, borderTop:`1px solid ${border}`}}>
+            <div style={{fontSize:10, fontWeight:700, letterSpacing:"0.08em", color:dim}}>
+              DATE LAYOUTS
+            </div>
+            <div style={{display:"flex", gap:4}}>
+              <input
+                type="date"
+                value={dateInput}
+                onChange={e => setDateInput(e.target.value)}
+                style={{
+                  flex:1, background:bg2, border:`1px solid ${border}`,
+                  color:tok, borderRadius:4, padding:"3px 5px",
+                  fontSize:11, colorScheme:"dark",
+                }}
+              />
+              <Btn small onClick={() => { if (!dateBusy) handleLoadDateLayout(dateInput); }} active={dateBusy}>
+                {dateBusy ? "…" : "↓ Load"}
+              </Btn>
+            </div>
+            {layout?.dateKey && (
+              <Btn
+                small
+                active
+                onClick={() => { if (!dateBusy) handleSaveDateLayout(); }}
+              >
+                {dateBusy ? "Saving…" : `↑ Save to ${layout.dateKey}`}
+              </Btn>
+            )}
+            {dateMsg && (
+              <span style={{
+                fontSize:10, lineHeight:1.4,
+                color: dateMsg.includes("✓") ? "#4CAF50" : "#e07070",
+              }}>
+                {dateMsg}
+              </span>
             )}
           </div>
         </div>
