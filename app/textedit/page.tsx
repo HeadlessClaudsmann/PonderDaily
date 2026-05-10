@@ -6,7 +6,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 type Piece       = { type: string; title: string; body: string };
 type BandContent = Record<string, Piece>;
 type Band        = "6-8" | "9-12" | "13-16";
-type DayContent  = { theme: string; brief?: string; layoutName?: string } & Record<Band, BandContent>;
+// Frozen layout — baked into content at assignment time so live edits
+// to GridDesigner templates never retroactively change existing days.
+type FrozenCell   = { id: string; colStart: number; colSpan: number; rowStart: number; rowSpan: number; color: string; label: string; num?: number; triggersSnapshot?: number };
+type FrozenLayout = { cols: number; rows: number; cells: FrozenCell[] };
+
+type DayContent  = { theme: string; brief?: string; layoutName?: string; layout?: FrozenLayout } & Record<Band, BandContent>;
 
 type PromptEntry = {
   cellId: string; type: string; purpose: string; factual: boolean;
@@ -617,7 +622,7 @@ export default function TextEditPage() {
   const [view, setView]               = useState<"content" | "prompts">("content");
   const [showDupMenu, setShowDupMenu] = useState(false);
   const [rerollState, setRerollState] = useState<"idle" | "armed" | "running" | "error">("idle");
-  const [layoutNames, setLayoutNames] = useState<string[]>([]);
+  const [layoutTemplates, setLayoutTemplates] = useState<{ name: string; cols: number; rows: number; cells: FrozenCell[] }[]>([]);
   const rerollTimerRef                 = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Load date list, prompts, and gd-sync bg colour once ───────────────────
@@ -627,8 +632,14 @@ export default function TextEditPage() {
     fetch("/api/gd-sync", { cache: "no-store" })
       .then(r => r.json())
       .then(store => {
-        if (Array.isArray(store?.layouts))
-          setLayoutNames(store.layouts.map((l: { name: string }) => l.name));
+        if (Array.isArray(store?.layouts)) {
+          setLayoutTemplates(store.layouts.map((l: { name: string; cols: number; rows: number; snapshots: { cells: FrozenCell[] }[] }) => ({
+            name:  l.name,
+            cols:  l.cols,
+            rows:  l.rows,
+            cells: l.snapshots[0]?.cells ?? [],
+          })));
+        }
       })
       .catch(() => {});
   }, []);
@@ -869,35 +880,51 @@ export default function TextEditPage() {
                   lineHeight: 1.6 }}
               />
 
-              {/* Layout assignment */}
-              {layoutNames.length > 0 && (
+              {/* Layout assignment — clicking bakes a frozen snapshot of the
+                  current template into content.layout so GridDesigner edits
+                  never retroactively change this day. Re-click = re-bake. */}
+              {layoutTemplates.length > 0 && (
                 <>
                   <div style={{ height: 1, background: DK.b0, margin: "4px 0" }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                     <label style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em",
                       textTransform: "uppercase", color: DK.muted, flexShrink: 0,
                       fontFamily: "system-ui, sans-serif" }}>
                       Grid layout
                     </label>
-                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                      {layoutNames.map(name => {
-                        const active = (content.layoutName ?? layoutNames[0]) === name;
+                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
+                      {layoutTemplates.map(tpl => {
+                        const active = content.layoutName === tpl.name;
                         return (
-                          <button key={name} onClick={() => {
-                            setContent(p => p ? { ...p, layoutName: name } : p);
-                            setSaveState("idle");
-                          }} style={{
-                            fontSize: 11, fontWeight: 700, padding: "3px 10px",
-                            borderRadius: 5, cursor: "pointer",
-                            border: `1px solid ${active ? DK.b2 : DK.b0}`,
-                            background: active ? DK.b1 : "transparent",
-                            color: active ? DK.ink : DK.muted,
-                            fontFamily: "system-ui, sans-serif",
-                          }}>
-                            {name}
+                          <button
+                            key={tpl.name}
+                            title={active ? "Re-click to refresh from current template" : `Assign & freeze "${tpl.name}" to this date`}
+                            onClick={() => {
+                              setContent(p => p ? {
+                                ...p,
+                                layoutName: tpl.name,
+                                layout: { cols: tpl.cols, rows: tpl.rows, cells: tpl.cells },
+                              } : p);
+                              setSaveState("idle");
+                            }}
+                            style={{
+                              fontSize: 11, fontWeight: 700, padding: "3px 10px",
+                              borderRadius: 5, cursor: "pointer",
+                              border: `1px solid ${active ? DK.b2 : DK.b0}`,
+                              background: active ? DK.b1 : "transparent",
+                              color: active ? DK.ink : DK.muted,
+                              fontFamily: "system-ui, sans-serif",
+                            }}>
+                            {tpl.name}
                           </button>
                         );
                       })}
+                      {content.layout && (
+                        <span style={{ fontSize: 10, color: DK.muted, opacity: 0.5,
+                          fontFamily: "system-ui, sans-serif", marginLeft: 2 }}>
+                          ✓ frozen
+                        </span>
+                      )}
                     </div>
                   </div>
                 </>

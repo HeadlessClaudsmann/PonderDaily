@@ -16,19 +16,26 @@ function ink(hex: string): string {
   return (0.299 * r + 0.587 * g + 0.114 * b) > 0.52 ? "#2c2416" : "#ffffff";
 }
 
-function findLayout(store: Store, name?: string): GLayout | null {
-  if (name) {
-    const match = store.layouts.find(l => l.name === name);
-    if (match) return match;
-  }
-  // Fallback: "Grid 3", then third layout, then first layout
-  return store.layouts.find(l => l.name === "Grid 3") ?? store.layouts[2] ?? store.layouts[0] ?? null;
-}
-
 // ── Types ─────────────────────────────────────────────────────────────────────
-type Piece       = { type: string; title: string; body: string; isTitle?: boolean };
-type BandContent = Record<string, Piece>;
-type DayContent  = { theme: string; brief?: string; layoutName?: string } & Record<Band, BandContent>;
+type Piece        = { type: string; title: string; body: string; isTitle?: boolean };
+type BandContent  = Record<string, Piece>;
+type FrozenLayout = { cols: number; rows: number; cells: GCell[] };
+type DayContent   = { theme: string; brief?: string; layoutName?: string; layout?: FrozenLayout } & Record<Band, BandContent>;
+
+// Resolve the layout to render: frozen snapshot first, then live template fallback.
+// This means GridDesigner edits never retroactively change a day that has been frozen.
+function resolveLayout(store: Store, content: DayContent | null): FrozenLayout | null {
+  // 1. Prefer frozen snapshot baked at assignment time
+  if (content?.layout) return content.layout;
+
+  // 2. Fall back to live template by name (unassigned / legacy)
+  const tpl = content?.layoutName
+    ? (store.layouts.find(l => l.name === content.layoutName) ?? store.layouts.find(l => l.name === "Grid 3") ?? store.layouts[2] ?? store.layouts[0])
+    : (store.layouts.find(l => l.name === "Grid 3") ?? store.layouts[2] ?? store.layouts[0]);
+
+  if (!tpl) return null;
+  return { cols: tpl.cols, rows: tpl.rows, cells: tpl.snapshots[0]?.cells ?? [] };
+}
 
 const TITLE_CELL_ID = "j6wd322";
 
@@ -284,8 +291,8 @@ export default function Test3Page() {
     fg:          "#fff", // placeholder; actual fg computed in Cell
   };
 
-  const layout = store ? findLayout(store, content?.layoutName) : null;
-  const cells  = layout?.snapshots[0]?.cells ?? [];
+  const layout = store ? resolveLayout(store, content) : null;
+  const cells  = layout?.cells ?? [];
 
   if (!store || !content) {
     return (
@@ -298,8 +305,8 @@ export default function Test3Page() {
   if (!layout) {
     return (
       <div style={{ padding: 40, fontFamily: "Georgia, serif", color: "var(--pd-ink)" }}>
-        <h2>Grid 3 not found.</h2>
-        <p>Create a layout named &quot;Grid 3&quot; in <a href="/design">/design</a>.</p>
+        <h2>No layout found.</h2>
+        <p>Create a layout named &quot;Grid 3&quot; in <a href="/design">/design</a>, or assign a layout in <a href="/textedit">/textedit</a>.</p>
       </div>
     );
   }
