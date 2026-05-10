@@ -263,13 +263,10 @@ export default function Test3Page() {
   const store                       = useGridSync();
   const [band, setBand]             = useState<Band>("13-16");
   const [date, setDate]             = useState(() => new Date().toISOString().slice(0, 10));
-  const [isAdmin, setIsAdmin]       = useState(false);
   const [contentList, setContentList] = useState<string[]>([]);
   const content                     = useContentSync(date);
 
-  // Detect admin mode from URL (?admin)
   useEffect(() => {
-    setIsAdmin(new URLSearchParams(window.location.search).has("admin"));
     fetch("/api/content/list", { cache: "no-store" })
       .then(r => r.json())
       .then((list: string[]) => setContentList([...list].sort()))
@@ -280,8 +277,8 @@ export default function Test3Page() {
   const idx         = contentList.indexOf(date);
   const prevDate    = idx > 0 ? contentList[idx - 1] : null;
   const nextDate    = idx < contentList.length - 1 ? contentList[idx + 1] : null;
-  const canGoBack   = prevDate !== null;
-  const canGoForward = isAdmin && nextDate !== null;
+  const canGoBack    = prevDate !== null;
+  const canGoForward = nextDate !== null;
 
   const navProps: NavProps = {
     onPrev:      () => prevDate && setDate(prevDate),
