@@ -38,6 +38,7 @@ type Store = {
   layouts: GLayout[];
   todayId: string | null;
   palette: string[];   // 7 editable slots
+  bgColor?: string;    // canvas / page background
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,7 +48,7 @@ type Store = {
 const STORE_KEY = "ponder-grid-designer";
 
 function loadStore(): Store {
-  const defaults: Store = { layouts: [], todayId: null, palette: [...DEFAULT_PALETTE] };
+  const defaults: Store = { layouts: [], todayId: null, palette: [...DEFAULT_PALETTE], bgColor: "#181824" };
   if (typeof window === "undefined") return defaults;
   try {
     const raw = localStorage.getItem(STORE_KEY);
@@ -381,6 +382,7 @@ interface CanvasProps {
   selectedId:    string | null;
   pendingColor:  string;
   previewMode:   boolean;
+  bgColor?:      string;
   onSelectCell:  (id: string | null) => void;
   onDrawCell:    (cell: Omit<GCell, "id" | "num">) => void;
   onPatchCell:   (id: string, patch: Partial<GCell>) => void;
@@ -388,7 +390,7 @@ interface CanvasProps {
 }
 
 function GridCanvas({
-  layout, snapshot, selectedId, pendingColor, previewMode,
+  layout, snapshot, selectedId, pendingColor, previewMode, bgColor = "#181824",
   onSelectCell, onDrawCell, onPatchCell, onTrigger,
 }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -509,6 +511,17 @@ function GridCanvas({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  // Adaptive grid-line + border colours based on canvas luminance
+  const bgIsLight = (() => {
+    if (!bgColor.startsWith("#") || bgColor.length < 7) return false;
+    const r = parseInt(bgColor.slice(1, 3), 16) / 255;
+    const g = parseInt(bgColor.slice(3, 5), 16) / 255;
+    const b = parseInt(bgColor.slice(5, 7), 16) / 255;
+    return 0.299 * r + 0.587 * g + 0.114 * b > 0.5;
+  })();
+  const gridLine  = bgIsLight ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.06)";
+  const gridBorder = bgIsLight ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.1)";
+
   return (
     <div
       ref={containerRef}
@@ -520,13 +533,13 @@ function GridCanvas({
         position: "relative", width: "100%", height: "100%",
         cursor: containerCursor,
         backgroundImage: [
-          `linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)`,
-          `linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)`,
+          `linear-gradient(${gridLine} 1px, transparent 1px)`,
+          `linear-gradient(90deg, ${gridLine} 1px, transparent 1px)`,
         ].join(","),
         backgroundSize: `calc(100% / ${cols}) calc(100% / ${rows})`,
-        backgroundColor: "#181824",
+        backgroundColor: bgColor,
         borderRadius: 8,
-        border: "1px solid rgba(255,255,255,0.1)",
+        border: `1px solid ${gridBorder}`,
         userSelect: "none",
       }}
     >
@@ -670,9 +683,10 @@ interface PlayerProps {
   layout:      GLayout;
   snapshots:   GSnapshot[];
   onClose:     () => void;
+  bgColor?:    string;
 }
 
-function PlayerOverlay({ layout, snapshots, onClose }: PlayerProps) {
+function PlayerOverlay({ layout, snapshots, onClose, bgColor = "#181824" }: PlayerProps) {
   const [snapIdx, setSnapIdx]   = useState(0);
   const [stagger, setStagger]   = useState(35);
   const [stiffness, setStiffness] = useState(420);
@@ -698,6 +712,16 @@ function PlayerOverlay({ layout, snapshots, onClose }: PlayerProps) {
     width:  `${(colSpan / cols) * 100}%`,
     height: `${(rowSpan / rows) * 100}%`,
   });
+
+  const bgIsLight = (() => {
+    if (!bgColor.startsWith("#") || bgColor.length < 7) return false;
+    const r = parseInt(bgColor.slice(1, 3), 16) / 255;
+    const g = parseInt(bgColor.slice(3, 5), 16) / 255;
+    const b = parseInt(bgColor.slice(5, 7), 16) / 255;
+    return 0.299 * r + 0.587 * g + 0.114 * b > 0.5;
+  })();
+  const gridLine   = bgIsLight ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.05)";
+  const gridBorder = bgIsLight ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.1)";
 
   return (
     <div style={{
@@ -731,13 +755,13 @@ function PlayerOverlay({ layout, snapshots, onClose }: PlayerProps) {
         width: "min(90vw, 1080px)",
         aspectRatio: `${cols} / ${rows}`,
         position: "relative",
-        background: "#181824",
+        background: bgColor,
         borderRadius: 10,
-        border: "1px solid rgba(255,255,255,0.1)",
+        border: `1px solid ${gridBorder}`,
         overflow: "visible",
         backgroundImage: [
-          `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)`,
-          `linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
+          `linear-gradient(${gridLine} 1px, transparent 1px)`,
+          `linear-gradient(90deg, ${gridLine} 1px, transparent 1px)`,
         ].join(","),
         backgroundSize: `calc(100% / ${cols}) calc(100% / ${rows})`,
       }}>
@@ -1052,6 +1076,12 @@ export default function GridDesigner() {
     if (pendingColor === oldColor) setPendingColor(newColor);
   };
 
+  // ── Background colour change ───────────────────────────────────────────────
+
+  const handleBgColorChange = (newColor: string) => {
+    mutateStore(s => ({ ...s, bgColor: newColor }));
+  };
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const tok = "#ccc";
@@ -1149,6 +1179,26 @@ export default function GridDesigner() {
               onColorChange={newColor => handleChangePaletteColor(i, newColor)}
             />
           ))}
+        </div>
+
+        {/* ── Background colour picker ── */}
+        <div style={{
+          display:"flex", alignItems:"center", gap:5,
+          marginLeft:4, paddingLeft:10,
+          borderLeft:`1px solid ${border}`,
+        }}>
+          <span style={{ fontSize:10, fontWeight:600, letterSpacing:"0.06em", color:dim, textTransform:"uppercase", userSelect:"none" }}>BG</span>
+          <label style={{ position:"relative", width:20, height:20, cursor:"pointer", borderRadius:4, overflow:"hidden",
+            border:"2px solid rgba(255,255,255,0.22)", flexShrink:0,
+            background: store.bgColor ?? "#181824",
+          }}>
+            <input
+              type="color"
+              value={store.bgColor ?? "#181824"}
+              onChange={e => handleBgColorChange(e.target.value)}
+              style={{ position:"absolute", inset:0, opacity:0, cursor:"pointer", padding:0, border:"none" }}
+            />
+          </label>
         </div>
 
         <div style={{flex:1}}/>
@@ -1291,6 +1341,7 @@ export default function GridDesigner() {
                 selectedId={selectedId}
                 pendingColor={pendingColor}
                 previewMode={false}
+                bgColor={store.bgColor}
                 onSelectCell={setSelectedId}
                 onDrawCell={handleDrawCell}
                 onPatchCell={handlePatchCell}
@@ -1422,6 +1473,7 @@ export default function GridDesigner() {
               layout={layout}
               snapshots={layout.snapshots}
               onClose={()=>setPreviewOpen(false)}
+              bgColor={store.bgColor}
             />
           </motion.div>
         )}

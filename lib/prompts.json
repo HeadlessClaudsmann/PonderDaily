@@ -1,0 +1,167 @@
+[
+  {
+    "cellId": "aduz9fn",
+    "type": "Today's Story",
+    "purpose": "Narrative hook that opens the whole page. 3–4 sentences. Establishes the theme, gives one surprising fact, and ends with a consequence or open question that makes the reader want to know more.",
+    "factual": false,
+    "bands": {
+      "6-8":   "Short sentences. One concrete image a child can picture. End with something that feels personal — 'that means you've never seen...' or 'scientists don't know yet'.",
+      "9-12":  "Introduce one statistic or surprising number. Make the stakes feel real. A tension between what we know and what we don't is good.",
+      "13-16": "Full nuance. If there's an ethical or systemic dimension, surface it. Don't hand-hold. Trust the reader."
+    }
+  },
+  {
+    "cellId": "ojb605w",
+    "type": "Who to Know",
+    "purpose": "A real person connected to the theme. 2–3 punchy facts that make them memorable, not a biography. End with a quote if there's a great one.",
+    "factual": true,
+    "bands": {
+      "6-8":   "Lead with the most jaw-dropping thing they did. One sentence each. No titles or jargon.",
+      "9-12":  "Include a role or credential, then the achievement, then why it matters now.",
+      "13-16": "Focus on what they changed, who they challenged, and what's still unresolved."
+    }
+  },
+  {
+    "cellId": "f3wmmk0",
+    "type": "Quick Quiz",
+    "purpose": "Exactly 3 multiple-choice questions. One easy, one medium, one hard. Format: question on its own line, then 4 options separated by ' · '. No answers shown.",
+    "factual": true,
+    "bands": {
+      "6-8":   "Questions based on the story content — answers should be discoverable from reading it. No trick questions.",
+      "9-12":  "Mix of recall and inference. One question should require a small logical leap.",
+      "13-16": "At least one question that a thoughtful adult might get wrong. Can include contested or nuanced answers."
+    }
+  },
+  {
+    "cellId": "rrdnkqh",
+    "type": "Read This",
+    "purpose": "1–2 book or article recommendations directly linked to the theme. For each: title, author, one sentence on why it's worth reading. Lean toward narrative non-fiction or literary fiction — not textbooks.",
+    "factual": false,
+    "bands": {
+      "6-8":   "Picture books or early chapter books only. Must be widely available.",
+      "9-12":  "Middle-grade or accessible adult non-fiction. Avoid anything dated or dry.",
+      "13-16": "Young adult or adult literary. Can include challenging or morally complex texts."
+    }
+  },
+  {
+    "cellId": "48bcse3",
+    "type": "Talk About It",
+    "purpose": "One open discussion question for the dinner table or classroom. Must be genuinely debatable — no obvious right answer. Should feel urgent, not academic.",
+    "factual": false,
+    "bands": {
+      "6-8":   "Concrete and personal. 'Would you...', 'What would you do if...'. Avoid abstract concepts.",
+      "9-12":  "Can involve fairness, tradeoffs, or competing interests. Still grounded in the concrete.",
+      "13-16": "Systemic, ethical, or political dimensions welcome. Should be provocative without being leading."
+    }
+  },
+  {
+    "cellId": "88o5166",
+    "type": "Would You Rather",
+    "purpose": "A genuine dilemma — both options should be appealing and unappealing in different ways, so there's no obvious right answer. Connected to the theme. Format: Option A description, then '— or —', then Option B.",
+    "factual": false,
+    "bands": {
+      "6-8":   "Sensory and concrete. 'Live underwater vs live in the clouds.' Funny is good.",
+      "9-12":  "Involve real tradeoffs — isolation vs danger, comfort vs adventure.",
+      "13-16": "Can involve ethical tradeoffs, not just personal preference."
+    }
+  },
+  {
+    "cellId": "t6ezhxo",
+    "type": "Weird Science",
+    "purpose": "One genuinely surprising scientific fact or mechanism related to the theme. 2–3 sentences. Must be weird enough to make someone say 'wait, really?'",
+    "factual": true,
+    "bands": {
+      "6-8":   "Use an analogy to something familiar. No technical vocabulary without an immediate explanation.",
+      "9-12":  "Name the mechanism or process. One technical term is fine if explained.",
+      "13-16": "Can go deeper into the mechanism. Evolutionary, chemical, or physical explanations welcome."
+    }
+  },
+  {
+    "cellId": "k1p4g3j",
+    "type": "Big Question",
+    "purpose": "A philosophical or ethical question that has no easy answer and connects to the theme. 1–2 sentences max. The question itself is the content — don't try to answer it.",
+    "factual": false,
+    "bands": {
+      "6-8":   "Imaginative and empathetic. 'If animals could vote...' or 'What if we couldn't...'",
+      "9-12":  "Fairness, rights, or responsibility. Still approachable but genuinely open.",
+      "13-16": "Philosophical, ethical, or political. Should be uncomfortable in a productive way."
+    }
+  },
+  {
+    "cellId": "h16qorg",
+    "type": "On This Day",
+    "purpose": "A real historical event connected to the theme. Lead with the date (e.g. '23 Jan 1960'). Then 2 sentences: what happened, and why it still matters or what it changed.",
+    "factual": true,
+    "bands": {
+      "6-8":   "Focus on the human story — who was there, what they saw. One clear consequence.",
+      "9-12":  "Include the historical context. Why was this moment possible at this point in history?",
+      "13-16": "What did this event challenge or prove? Include any controversy or ongoing debate."
+    }
+  },
+  {
+    "cellId": "yecwf32",
+    "type": "Place Spotlight",
+    "purpose": "A specific real place connected to the theme. 2–3 striking facts — size, depth, population, record, danger. Make it feel real and specific, not like a geography textbook entry.",
+    "factual": true,
+    "bands": {
+      "6-8":   "Use comparisons to things kids know — 'as tall as 10 double-decker buses stacked up'. One wow-fact.",
+      "9-12":  "Include location, one record or superlative, and one human element.",
+      "13-16": "Can include political, environmental, or cultural complexity about the place."
+    }
+  },
+  {
+    "cellId": "z9wswia",
+    "type": "Word",
+    "purpose": "One vocabulary word connected to the theme. Pronunciation in IPA. Etymology (where the word comes from). One sentence of definition. Optionally: how to use it in a sentence.",
+    "factual": true,
+    "bands": {
+      "6-8":   "Simple word with a surprising origin. Focus on the story of where it came from.",
+      "9-12":  "Can be a more technical term. Etymology + how it connects to the theme.",
+      "13-16": "Can be a genuinely difficult word. Explore nuance of meaning or contested usage."
+    }
+  },
+  {
+    "cellId": "7u91gy3",
+    "type": "Fact",
+    "purpose": "One striking statistic or fact. 1–2 sentences. Should be the kind of thing people repeat at dinner. Must be verifiable — include enough specificity to be fact-checkable.",
+    "factual": true,
+    "bands": {
+      "6-8":   "Relatable scale. Avoid percentages — use 'out of every 10' or comparisons.",
+      "9-12":  "Statistics are fine. Give enough context that the number is meaningful.",
+      "13-16": "Can include methodological nuance — 'as of 2023', 'according to X study'. Readers can handle uncertainty."
+    }
+  },
+  {
+    "cellId": "48t59tz",
+    "type": "Myth vs Fact",
+    "purpose": "One common misconception related to the theme, corrected. Format: 'myth statement' labelled Myth, then the corrected reality. 2 sentences total — one for the myth, one for the fact.",
+    "factual": true,
+    "bands": {
+      "6-8":   "Choose myths kids themselves commonly believe. Keep correction concrete and visual.",
+      "9-12":  "Can be myths adults hold too. The correction should be genuinely surprising.",
+      "13-16": "Can challenge media narratives or common cultural assumptions. More nuanced corrections welcome."
+    }
+  },
+  {
+    "cellId": "inm067g",
+    "type": "Challenge",
+    "purpose": "A specific, achievable activity for tonight or this weekend. Must be concrete — not 'learn more about' but 'find out', 'try to', 'ask someone'. Related to the theme.",
+    "factual": false,
+    "bands": {
+      "6-8":   "Something physical or social — show someone, find something, count something.",
+      "9-12":  "Can involve light research, a conversation, or a creative task. Should take <30 mins.",
+      "13-16": "Can be a deeper investigation, a position paper in their head, or a conversation with a specific type of person."
+    }
+  },
+  {
+    "cellId": "b9akthy",
+    "type": "Create",
+    "purpose": "An open creative prompt — draw, write, design, imagine something related to the theme. 1–2 sentences. Should be genuinely open-ended with no right answer.",
+    "factual": false,
+    "bands": {
+      "6-8":   "Drawing or simple writing. Very concrete starting point — 'draw a creature that...'",
+      "9-12":  "Writing, design, or invention. Give one constraint to spark ideas.",
+      "13-16": "Can be a written argument, creative fiction, or a design brief. Some intellectual stretch expected."
+    }
+  }
+]
