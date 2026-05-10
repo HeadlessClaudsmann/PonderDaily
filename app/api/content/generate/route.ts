@@ -67,9 +67,12 @@ async function generateBand(
 }
 
 // ── POST /api/content/generate ────────────────────────────────────────────────
+// Always returns DayContent[] (array). Pass variants=1 for a single-element array.
 export async function POST(req: NextRequest) {
   try {
-    const { theme, brief } = (await req.json()) as { theme?: string; brief?: string };
+    const { theme, brief, variants = 1 } = (await req.json()) as {
+      theme?: string; brief?: string; variants?: number;
+    };
     if (!theme?.trim()) {
       return NextResponse.json({ error: "theme is required" }, { status: 400 });
     }
@@ -81,21 +84,25 @@ export async function POST(req: NextRequest) {
 
     const prompts: PromptEntry[] = JSON.parse(readFileSync(PROMPTS_PATH, "utf8"));
     const client = new Anthropic({ apiKey });
-
     const bands: Band[] = ["6-8", "9-12", "13-16"];
-    const [b68, b912, b1316] = await Promise.all(
-      bands.map(b => generateBand(client, theme, brief, b, prompts))
+    const count = Math.max(1, Math.min(variants, 5)); // clamp 1–5
+
+    // Generate `count` independent variants, each with 3 bands in parallel
+    const allVariants = await Promise.all(
+      Array.from({ length: count }, () =>
+        Promise.all(bands.map(b => generateBand(client, theme, brief, b, prompts)))
+      )
     );
 
-    const dayContent = {
+    const result = allVariants.map(([b68, b912, b1316]) => ({
       theme,
       ...(brief ? { brief } : {}),
       "6-8":   b68,
       "9-12":  b912,
       "13-16": b1316,
-    };
+    }));
 
-    return NextResponse.json(dayContent);
+    return NextResponse.json(result);
   } catch (e) {
     console.error("[generate]", e);
     return NextResponse.json({ error: String(e) }, { status: 500 });

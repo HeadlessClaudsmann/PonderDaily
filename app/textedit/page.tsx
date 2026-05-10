@@ -187,15 +187,20 @@ function BandSection({ band, content, prompts, onUpdate }: {
 }
 
 // ── New day setup form ────────────────────────────────────────────────────────
+// First section ID used as preview headline in variant picker
+const PREVIEW_CELL = "aduz9fn";
+
 function NewDayForm({ date, onCreated }: {
   date: string;
   onCreated: (content: DayContent, save?: boolean) => void;
 }) {
-  const [theme, setTheme]       = useState("");
-  const [brief, setBrief]       = useState("");
-  const [variants, setVariants] = useState(2);
-  const [busy, setBusy]         = useState(false);
-  const [genError, setGenError] = useState("");
+  const [theme, setTheme]             = useState("");
+  const [brief, setBrief]             = useState("");
+  const [variants, setVariants]       = useState(1);
+  const [busy, setBusy]               = useState(false);
+  const [genError, setGenError]       = useState("");
+  const [generated, setGenerated]     = useState<DayContent[]>([]);
+  const [variantIdx, setVariantIdx]   = useState(0);
 
   async function create() {
     setBusy(true);
@@ -208,22 +213,28 @@ function NewDayForm({ date, onCreated }: {
     setBusy(false);
   }
 
-  async function reroll() {
+  async function generate() {
     if (!theme.trim()) return;
     setBusy(true);
     setGenError("");
+    setGenerated([]);
     try {
       const res = await fetch("/api/content/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme, brief: brief || undefined }),
+        body: JSON.stringify({ theme, brief: brief || undefined, variants }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
         setGenError(err.error ?? "Generation failed");
         return;
       }
-      const generated: DayContent = await res.json();
-      onCreated(generated, false);
+      const results: DayContent[] = await res.json();
+      if (results.length === 1) {
+        onCreated(results[0], false);
+      } else {
+        setGenerated(results);
+        setVariantIdx(0);
+      }
     } catch (e) {
       setGenError(String(e));
     } finally {
@@ -231,6 +242,84 @@ function NewDayForm({ date, onCreated }: {
     }
   }
 
+  // ── Variant picker (shown after multi-variant generation) ─────────────────
+  if (generated.length > 0) {
+    const v = generated[variantIdx];
+    const preview = v["13-16"]?.[PREVIEW_CELL];
+    return (
+      <div style={{ maxWidth: 520, margin: "48px auto 0", padding: "32px",
+        background: DK.surface, borderRadius: 12, border: `1px solid ${DK.b1}` }}>
+
+        <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.04em",
+          marginBottom: 4, color: DK.muted, fontFamily: "system-ui, sans-serif" }}>
+          Pick a variant · {theme}
+        </div>
+        <div style={{ fontSize: 11, color: DK.muted, marginBottom: 20,
+          fontFamily: "system-ui, sans-serif" }}>
+          Preview shows the opening story from the 13–16 band
+        </div>
+
+        {/* Variant tabs */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+          {generated.map((_, i) => (
+            <button key={i} onClick={() => setVariantIdx(i)} style={{
+              padding: "4px 14px", borderRadius: 6, fontSize: 12, fontWeight: 700,
+              border: `1.5px solid ${i === variantIdx ? DK.ink : DK.b1}`,
+              background: i === variantIdx ? DK.ink : "transparent",
+              color: i === variantIdx ? DK.bg : DK.muted,
+              cursor: "pointer", fontFamily: "system-ui, sans-serif",
+            }}>
+              {i + 1}
+            </button>
+          ))}
+          <span style={{ alignSelf: "center", fontSize: 11, color: DK.muted,
+            fontFamily: "system-ui, sans-serif", marginLeft: 4 }}>
+            of {generated.length}
+          </span>
+        </div>
+
+        {/* Preview card */}
+        {preview && (
+          <div style={{ background: DK.b0, borderRadius: 8, padding: "14px 16px",
+            marginBottom: 20, borderLeft: `3px solid #8b5dee` }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.07em",
+              textTransform: "uppercase", color: DK.muted,
+              fontFamily: "system-ui, sans-serif", marginBottom: 6 }}>
+              {preview.type}
+            </div>
+            <div style={{ fontSize: 15, fontFamily: "Georgia, serif",
+              fontWeight: 700, color: DK.ink, marginBottom: 6, lineHeight: 1.3 }}>
+              {preview.title}
+            </div>
+            <div style={{ fontSize: 12, color: DK.muted, lineHeight: 1.55,
+              fontFamily: "system-ui, sans-serif",
+              display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" as const,
+              overflow: "hidden" }}>
+              {preview.body}
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={() => setGenerated([])}
+            style={{ padding: "9px 16px", borderRadius: 8, fontSize: 12,
+              fontWeight: 700, border: `1px solid ${DK.b1}`, background: "transparent",
+              color: DK.muted, cursor: "pointer", fontFamily: "system-ui, sans-serif" }}>
+            ← Back
+          </button>
+          <button onClick={() => onCreated(generated[variantIdx], false)}
+            style={{ flex: 1, padding: "9px 0", borderRadius: 8, fontSize: 13,
+              fontWeight: 700, border: "none", background: DK.ink,
+              color: DK.bg, cursor: "pointer", fontFamily: "system-ui, sans-serif" }}>
+            Use variant {variantIdx + 1} →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Main form ─────────────────────────────────────────────────────────────
   return (
     <div style={{ maxWidth: 520, margin: "48px auto 0", padding: "32px",
       background: DK.surface, borderRadius: 12, border: `1px solid ${DK.b1}` }}>
@@ -257,7 +346,7 @@ function NewDayForm({ date, onCreated }: {
       <label style={{ display: "block", fontSize: 9, fontWeight: 800,
         letterSpacing: "0.08em", textTransform: "uppercase",
         color: DK.muted, marginBottom: 6, fontFamily: "system-ui, sans-serif" }}>
-        Additional context <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional — for re-roll)</span>
+        Additional context <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
       </label>
       <textarea value={brief} onChange={e => setBrief(e.target.value)}
         placeholder="e.g. Include Marie Curie. Focus on current news angle."
@@ -272,7 +361,7 @@ function NewDayForm({ date, onCreated }: {
       {/* Variants */}
       <label style={{ display: "block", fontSize: 9, fontWeight: 800,
         letterSpacing: "0.08em", textTransform: "uppercase",
-        color: DK.muted, marginBottom: 8, fontFamily: "system-ui, sans-serif" }}>Variants per section</label>
+        color: DK.muted, marginBottom: 8, fontFamily: "system-ui, sans-serif" }}>Variants to generate</label>
       <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
         {[1,2,3,4,5].map(n => (
           <button key={n} onClick={() => setVariants(n)} style={{
@@ -285,7 +374,7 @@ function NewDayForm({ date, onCreated }: {
         ))}
         <span style={{ alignSelf: "center", fontSize: 11, color: DK.muted,
           marginLeft: 6, fontFamily: "system-ui, sans-serif" }}>
-          {variants === 1 ? "single draft" : `${variants} options to choose from`}
+          {variants === 1 ? "single draft" : `${variants} to choose from`}
         </span>
       </div>
 
@@ -299,7 +388,7 @@ function NewDayForm({ date, onCreated }: {
             fontFamily: "system-ui, sans-serif" }}>
           {busy ? "Working…" : "Create blank"}
         </button>
-        <button onClick={reroll} disabled={!theme || busy}
+        <button onClick={generate} disabled={!theme || busy}
           style={{ flex: 1, padding: "9px 0", borderRadius: 8, fontSize: 13,
             fontWeight: 700,
             border: `1.5px solid ${theme && !busy ? DK.b2 : DK.b0}`,
@@ -617,10 +706,10 @@ export default function TextEditPage() {
     try {
       const res = await fetch("/api/content/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme: content.theme, brief: content.brief }),
+        body: JSON.stringify({ theme: content.theme, brief: content.brief, variants: 1 }),
       });
       if (!res.ok) { setRerollState("error"); return; }
-      const generated: DayContent = await res.json();
+      const [generated]: DayContent[] = await res.json();
       setContent(generated);
       setSaveState("idle");
       setRerollState("idle");

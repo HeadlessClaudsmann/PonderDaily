@@ -32,12 +32,12 @@ function formatDate(iso: string) {
   return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
-// ── Content sync — fetches today's file, refetches on tab focus ───────────────
-function useContentSync() {
+// ── Content sync — fetches content for a given date, refetches on tab focus ───
+function useContentSync(date: string) {
   const [content, setContent] = useState<DayContent | null>(null);
-  const date = new Date().toISOString().slice(0, 10);
 
   const fetchContent = useCallback(async () => {
+    setContent(null);
     try {
       const res = await fetch(`/api/content?date=${date}`, { cache: "no-store" });
       if (res.ok) setContent(await res.json());
@@ -51,6 +51,12 @@ function useContentSync() {
   }, [fetchContent]);
 
   return content;
+}
+
+function offsetDate(iso: string, days: number): string {
+  const d = new Date(iso + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
 // Build the band content map, injecting the synthetic title cell
@@ -243,10 +249,16 @@ function Cell({ cell, content }: { cell: GCell; content: BandContent }) {
 // Page
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function Test3Page() {
-  const store           = useGridSync();
-  const content         = useContentSync();
-  const [band, setBand] = useState<Band>("13-16");
-  const date            = new Date().toISOString().slice(0, 10);
+  const store              = useGridSync();
+  const [band, setBand]    = useState<Band>("13-16");
+  const [date, setDate]    = useState(() => new Date().toISOString().slice(0, 10));
+  const [isAdmin, setIsAdmin] = useState(false);
+  const content            = useContentSync(date);
+
+  // Detect admin mode from URL (?admin)
+  useEffect(() => {
+    setIsAdmin(new URLSearchParams(window.location.search).has("admin"));
+  }, []);
 
   const layout = store ? findGrid3(store) : null;
   const cells  = layout?.snapshots[0]?.cells ?? [];
@@ -283,27 +295,51 @@ export default function Test3Page() {
         width:         "100%",
       }}
     >
-      {/* ── Thin top bar — age-band selector ─────────────────────────────── */}
+      {/* ── Thin top bar — date nav (left) + age-band selector (right) ──── */}
       <div style={{
-        display: "flex", justifyContent: "flex-end", alignItems: "center",
-        flexShrink: 0, paddingBottom: 6, gap: 5,
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        flexShrink: 0, paddingBottom: 6,
       }}>
-        {/* transform nudges buttons 2px up without changing bar height */}
+        {/* Date navigation */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, transform: "translateY(-2px)" }}>
+          <button onClick={() => setDate(d => offsetDate(d, -1))}
+            title="Previous day"
+            style={{ background: "none", border: "none", cursor: "pointer",
+              fontSize: 16, lineHeight: 1, padding: "0 4px",
+              color: "var(--pd-ink-muted)", opacity: 0.7 }}>
+            ‹
+          </button>
+          <span style={{ fontSize: 11, color: "var(--pd-ink-muted)", fontFamily: "system-ui, sans-serif",
+            userSelect: "none", minWidth: 90, textAlign: "center" }}>
+            {date}
+          </span>
+          {isAdmin && (
+            <button onClick={() => setDate(d => offsetDate(d, 1))}
+              title="Next day (admin)"
+              style={{ background: "none", border: "none", cursor: "pointer",
+                fontSize: 16, lineHeight: 1, padding: "0 4px",
+                color: "var(--pd-ink-muted)", opacity: 0.7 }}>
+              ›
+            </button>
+          )}
+        </div>
+
+        {/* Band selector */}
         <div style={{ display: "flex", gap: 5, transform: "translateY(-2px)" }}>
-        {BANDS.map(b => (
-          <button
-            key={b.id}
-            onClick={() => setBand(b.id)}
-            style={{
-              padding: "2px 11px", borderRadius: 20,
-              fontSize: 12, fontWeight: 700, lineHeight: 1.5,
-              border: `1.5px solid ${band === b.id ? "var(--pd-ink)" : "rgba(0,0,0,0.18)"}`,
-              background: band === b.id ? "var(--pd-ink)" : "transparent",
-              color:      band === b.id ? "#fff" : "var(--pd-ink-muted)",
-              cursor: "pointer",
-            }}
-          >{b.label}</button>
-        ))}
+          {BANDS.map(b => (
+            <button
+              key={b.id}
+              onClick={() => setBand(b.id)}
+              style={{
+                padding: "2px 11px", borderRadius: 20,
+                fontSize: 12, fontWeight: 700, lineHeight: 1.5,
+                border: `1.5px solid ${band === b.id ? "var(--pd-ink)" : "rgba(0,0,0,0.18)"}`,
+                background: band === b.id ? "var(--pd-ink)" : "transparent",
+                color:      band === b.id ? "#fff" : "var(--pd-ink-muted)",
+                cursor: "pointer",
+              }}
+            >{b.label}</button>
+          ))}
         </div>
       </div>
 
