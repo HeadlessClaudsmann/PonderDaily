@@ -174,6 +174,7 @@ function Cell({ cell, content, navProps }: {
               fontSize: 17, lineHeight: 1, padding: "0 3px",
               color: fg, opacity: 0.5,
               fontFamily: "system-ui, sans-serif",
+              transform: "translateY(-3px)",
             };
             return (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
