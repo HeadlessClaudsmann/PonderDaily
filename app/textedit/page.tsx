@@ -89,14 +89,14 @@ function SaveButton({ state, onClick }: { state: SaveState; onClick: () => void 
 }
 
 // ── Piece card ────────────────────────────────────────────────────────────────
-function PieceCard({ id, piece, accent, prompt, inputBg, onUpdate }: {
-  id: string; piece: Piece; accent: string; inputBg: string;
+function PieceCard({ id, piece, accent, prompt, onUpdate }: {
+  id: string; piece: Piece; accent: string;
   prompt?: PromptEntry;
   onUpdate: (field: keyof Piece, value: string) => void;
 }) {
   const [showPrompt, setShowPrompt] = useState(false);
   return (
-    <div style={{ background: inputBg, borderRadius: 8,
+    <div style={{ background: DK.surface, borderRadius: 8,
       border: `1px solid ${DK.b0}`, borderLeft: `3px solid ${accent}`,
       padding: "11px 13px", display: "flex", flexDirection: "column", gap: 8 }}>
 
@@ -153,10 +153,9 @@ function PieceCard({ id, piece, accent, prompt, inputBg, onUpdate }: {
 }
 
 // ── Band section ──────────────────────────────────────────────────────────────
-function BandSection({ band, content, prompts, inputBg, onUpdate }: {
+function BandSection({ band, content, prompts, onUpdate }: {
   band: typeof BANDS[number]; content: BandContent;
   prompts: PromptEntry[];
-  inputBg: string;
   onUpdate: (id: string, field: keyof Piece, value: string) => void;
 }) {
   const promptMap = Object.fromEntries(prompts.map(p => [p.cellId, p]));
@@ -179,7 +178,7 @@ function BandSection({ band, content, prompts, inputBg, onUpdate }: {
       <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
         {entries.map(([id, piece]) => (
           <PieceCard key={id} id={id} piece={piece} accent={band.colour}
-            prompt={promptMap[id]} inputBg={inputBg}
+            prompt={promptMap[id]}
             onUpdate={(f, v) => onUpdate(id, f, v)} />
         ))}
       </div>
@@ -321,9 +320,8 @@ function NewDayForm({ date, onCreated }: {
 }
 
 // ── Full-page prompts editor ──────────────────────────────────────────────────
-function PromptsEditor({ prompts, inputBg, onSave, onDiscard }: {
+function PromptsEditor({ prompts, onSave, onDiscard }: {
   prompts: PromptEntry[];
-  inputBg: string;
   onSave:    (p: PromptEntry[]) => void;
   onDiscard: () => void;
 }) {
@@ -427,7 +425,7 @@ function PromptsEditor({ prompts, inputBg, onSave, onDiscard }: {
               style={{ width: "100%", marginBottom: 16, padding: "8px 10px",
                 fontSize: 13, lineHeight: 1.6, fontFamily: "system-ui, sans-serif",
                 border: `1px solid ${DK.b1}`, borderRadius: 6,
-                background: inputBg, color: DK.ink,
+                background: DK.b0, color: DK.ink,
                 resize: "none", boxSizing: "border-box" }}
             />
 
@@ -447,7 +445,7 @@ function PromptsEditor({ prompts, inputBg, onSave, onDiscard }: {
                     style={{ width: "100%", padding: "6px 8px",
                       fontSize: 11, lineHeight: 1.55, fontFamily: "system-ui, sans-serif",
                       border: `1px solid ${DK.b0}`, borderRadius: 5,
-                      background: inputBg, color: DK.muted,
+                      background: DK.b0, color: DK.muted,
                       resize: "none", boxSizing: "border-box" }}
                   />
                 </div>
@@ -530,17 +528,12 @@ export default function TextEditPage() {
   const [view, setView]               = useState<"content" | "prompts">("content");
   const [showDupMenu, setShowDupMenu] = useState(false);
   const [rerollState, setRerollState] = useState<"idle" | "armed" | "running" | "error">("idle");
-  const [inputBg, setInputBg]         = useState("#181824");
   const rerollTimerRef                 = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Load date list, prompts, and gd-sync bg colour once ───────────────────
   useEffect(() => {
     fetch("/api/content/list").then(r => r.json()).then(setDates).catch(() => {});
     fetch("/api/prompts").then(r => r.json()).then(setPrompts).catch(() => {});
-    fetch("/api/gd-sync", { cache: "no-store" })
-      .then(r => r.json())
-      .then(store => { if (store?.bgColor) setInputBg(store.bgColor); })
-      .catch(() => {});
   }, []);
 
   // ── Load content when date changes ────────────────────────────────────────
@@ -639,7 +632,6 @@ export default function TextEditPage() {
     return (
       <PromptsEditor
         prompts={prompts}
-        inputBg={inputBg}
         onSave={p => { setPrompts(p); setView("content"); }}
         onDiscard={() => setView("content")}
       />
@@ -785,7 +777,6 @@ export default function TextEditPage() {
             {BANDS.map(band => (
               <BandSection key={band.id} band={band}
                 content={content[band.id]} prompts={prompts}
-                inputBg={inputBg}
                 onUpdate={(id, field, value) => update(band.id, id, field, value)} />
             ))}
           </>
