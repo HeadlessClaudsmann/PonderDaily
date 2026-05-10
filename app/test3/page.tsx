@@ -16,14 +16,19 @@ function ink(hex: string): string {
   return (0.299 * r + 0.587 * g + 0.114 * b) > 0.52 ? "#2c2416" : "#ffffff";
 }
 
-function findGrid3(store: Store): GLayout | null {
-  return store.layouts.find(l => l.name === "Grid 3") ?? store.layouts[2] ?? null;
+function findLayout(store: Store, name?: string): GLayout | null {
+  if (name) {
+    const match = store.layouts.find(l => l.name === name);
+    if (match) return match;
+  }
+  // Fallback: "Grid 3", then third layout, then first layout
+  return store.layouts.find(l => l.name === "Grid 3") ?? store.layouts[2] ?? store.layouts[0] ?? null;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Piece       = { type: string; title: string; body: string; isTitle?: boolean };
 type BandContent = Record<string, Piece>;
-type DayContent  = { theme: string; brief?: string } & Record<Band, BandContent>;
+type DayContent  = { theme: string; brief?: string; layoutName?: string } & Record<Band, BandContent>;
 
 const TITLE_CELL_ID = "j6wd322";
 
@@ -32,7 +37,7 @@ function formatDate(iso: string) {
   return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
-// ── Content sync — fetches content for a given date, refetches on tab focus ───
+// ── Content sync ──────────────────────────────────────────────────────────────
 function useContentSync(date: string) {
   const [content, setContent] = useState<DayContent | null>(null);
 
@@ -51,12 +56,6 @@ function useContentSync(date: string) {
   }, [fetchContent]);
 
   return content;
-}
-
-function offsetDate(iso: string, days: number): string {
-  const d = new Date(iso + "T12:00:00");
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
 }
 
 // Build the band content map, injecting the synthetic title cell
@@ -103,8 +102,21 @@ function useGridSync() {
   return store;
 }
 
+// ── Nav props passed to title cell ────────────────────────────────────────────
+type NavProps = {
+  onPrev: () => void;
+  onNext: () => void;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  fg: string;
+};
+
 // ── Cell component ────────────────────────────────────────────────────────────
-function Cell({ cell, content }: { cell: GCell; content: BandContent }) {
+function Cell({ cell, content, navProps }: {
+  cell: GCell;
+  content: BandContent;
+  navProps?: NavProps;
+}) {
   const p       = content[cell.id];
   const isTitle = p?.isTitle ?? false;
   const fg      = ink(cell.color);
@@ -113,28 +125,19 @@ function Cell({ cell, content }: { cell: GCell; content: BandContent }) {
 
   const badgeBg = fg === "#ffffff" ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.10)";
 
-  // Body overflow detection ─────────────────────────────────────────────────
-  // Only relevant for non-tiny content cells.
-  // Start visible; useLayoutEffect (runs before paint) hides body if it
-  // overflows its allotted flex space — no half-line clipping ever shown.
-  // Composite key on parent remounts on dimension change → resets to true.
+  // Body overflow detection
   const bodyRef             = useRef<HTMLParagraphElement>(null);
   const [showBody, setShowBody] = useState(true);
 
   useLayoutEffect(() => {
     const el = bodyRef.current;
     if (!el) return;
-    // scrollHeight = natural content height (ignores overflow:hidden)
-    // clientHeight = actual rendered height (what's visible)
     setShowBody(el.scrollHeight <= el.clientHeight + 2);
-  }, []); // deps: empty — parent remounts on dimension change via composite key
+  }, []);
 
   return (
     <div
-      className={[
-        "test3-cell",
-        isTitle ? "test3-title-cell" : "",
-      ].filter(Boolean).join(" ")}
+      className={["test3-cell", isTitle ? "test3-title-cell" : ""].filter(Boolean).join(" ")}
       style={{
         gridColumn:    `${cell.colStart} / span ${cell.colSpan}`,
         gridRow:       `${cell.rowStart} / span ${cell.rowSpan}`,
@@ -156,12 +159,19 @@ function Cell({ cell, content }: { cell: GCell; content: BandContent }) {
         isTitle ? (
           /* ── Title cell ──────────────────────────────────────────────────── */
           (() => {
-            const [date, ...rest] = p.body.split(" · ");
+            const [dateStr, ...rest] = p.body.split(" · ");
             const theme = rest.join(" · ");
+            const nav = navProps;
+            const btnStyle: React.CSSProperties = {
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 17, lineHeight: 1, padding: "0 3px",
+              color: fg, opacity: 0.5,
+              fontFamily: "system-ui, sans-serif",
+            };
             return (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
 
-                {/* Left — wordmark row 1, date row 2 */}
+                {/* Left — wordmark row 1, date + nav row 2 */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <span style={{
                     fontSize: 20, fontWeight: 900, letterSpacing: "0.04em",
@@ -169,12 +179,20 @@ function Cell({ cell, content }: { cell: GCell; content: BandContent }) {
                   }}>
                     {p.title}
                   </span>
-                  <span style={{ fontSize: 12, lineHeight: 1.3, opacity: 0.55 }}>
-                    {date}
-                  </span>
+                  {/* Date with prev/next arrows */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 0,
+                    fontSize: 12, lineHeight: 1.3, opacity: 0.55 }}>
+                    {nav?.canGoBack && (
+                      <button onClick={nav.onPrev} style={{ ...btnStyle, marginLeft: -4 }}>‹</button>
+                    )}
+                    <span>{dateStr}</span>
+                    {nav?.canGoForward && (
+                      <button onClick={nav.onNext} style={btnStyle}>›</button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Right — "Today's theme:" row 1, theme value row 2 in headline font */}
+                {/* Right — "Today's theme:" label + theme value */}
                 {theme && (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0, transform: "translateY(5px)" }}>
                     <span style={{ fontSize: 12, lineHeight: 1.3, opacity: 0.55, whiteSpace: "nowrap" }}>
@@ -195,7 +213,6 @@ function Cell({ cell, content }: { cell: GCell; content: BandContent }) {
         ) : (
           /* ── Content cell ────────────────────────────────────────────────── */
           <>
-            {/* Badge — hidden on tiny cells to give title two full lines */}
             {!tiny && (
               <span style={{
                 alignSelf: "flex-start", flexShrink: 0,
@@ -206,36 +223,23 @@ function Cell({ cell, content }: { cell: GCell; content: BandContent }) {
               }}>{p.type}</span>
             )}
 
-            {/* Title — 2-line clamp */}
             <strong style={{
-              flexShrink: 0,
-              fontSize: 14.5,
-              fontFamily: "Georgia, serif",
-              lineHeight: 1.25,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical" as const,
+              flexShrink: 0, fontSize: 14.5, fontFamily: "Georgia, serif", lineHeight: 1.25,
+              display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const,
               overflow: "hidden",
             }}>
               {p.title}
             </strong>
 
-            {/* Body — rendered even when hidden so ref can measure overflow.
-                useLayoutEffect sets opacity:0 if content overflows the cell. */}
             {!tiny && (
               <p
                 ref={bodyRef}
                 style={{
-                  margin: 0, flexShrink: 1, flex: 1,
-                  fontSize: 15,
-                  lineHeight: 1.55,
-                  overflow: "hidden",
-                  opacity: showBody ? 0.88 : 0,
-                  whiteSpace: "pre-line",
+                  margin: 0, flexShrink: 1, flex: 1, fontSize: 15, lineHeight: 1.55,
+                  overflow: "hidden", opacity: showBody ? 0.88 : 0, whiteSpace: "pre-line",
                 }}
               >{p.body}</p>
             )}
-
           </>
         )
       ) : (
@@ -249,18 +253,38 @@ function Cell({ cell, content }: { cell: GCell; content: BandContent }) {
 // Page
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function Test3Page() {
-  const store              = useGridSync();
-  const [band, setBand]    = useState<Band>("13-16");
-  const [date, setDate]    = useState(() => new Date().toISOString().slice(0, 10));
-  const [isAdmin, setIsAdmin] = useState(false);
-  const content            = useContentSync(date);
+  const store                       = useGridSync();
+  const [band, setBand]             = useState<Band>("13-16");
+  const [date, setDate]             = useState(() => new Date().toISOString().slice(0, 10));
+  const [isAdmin, setIsAdmin]       = useState(false);
+  const [contentList, setContentList] = useState<string[]>([]);
+  const content                     = useContentSync(date);
 
   // Detect admin mode from URL (?admin)
   useEffect(() => {
     setIsAdmin(new URLSearchParams(window.location.search).has("admin"));
+    fetch("/api/content/list", { cache: "no-store" })
+      .then(r => r.json())
+      .then((list: string[]) => setContentList([...list].sort()))
+      .catch(() => {});
   }, []);
 
-  const layout = store ? findGrid3(store) : null;
+  // Navigate only to dates that have content
+  const idx         = contentList.indexOf(date);
+  const prevDate    = idx > 0 ? contentList[idx - 1] : null;
+  const nextDate    = idx < contentList.length - 1 ? contentList[idx + 1] : null;
+  const canGoBack   = prevDate !== null;
+  const canGoForward = isAdmin && nextDate !== null;
+
+  const navProps: NavProps = {
+    onPrev:      () => prevDate && setDate(prevDate),
+    onNext:      () => nextDate && setDate(nextDate),
+    canGoBack,
+    canGoForward,
+    fg:          "#fff", // placeholder; actual fg computed in Cell
+  };
+
+  const layout = store ? findLayout(store, content?.layoutName) : null;
   const cells  = layout?.snapshots[0]?.cells ?? [];
 
   if (!store || !content) {
@@ -295,36 +319,11 @@ export default function Test3Page() {
         width:         "100%",
       }}
     >
-      {/* ── Thin top bar — date nav (left) + age-band selector (right) ──── */}
+      {/* ── Thin top bar — band selector only ────────────────────────────── */}
       <div style={{
-        display: "flex", justifyContent: "space-between", alignItems: "center",
+        display: "flex", justifyContent: "flex-end", alignItems: "center",
         flexShrink: 0, paddingBottom: 6,
       }}>
-        {/* Date navigation */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, transform: "translateY(-2px)" }}>
-          <button onClick={() => setDate(d => offsetDate(d, -1))}
-            title="Previous day"
-            style={{ background: "none", border: "none", cursor: "pointer",
-              fontSize: 16, lineHeight: 1, padding: "0 4px",
-              color: "var(--pd-ink-muted)", opacity: 0.7 }}>
-            ‹
-          </button>
-          <span style={{ fontSize: 11, color: "var(--pd-ink-muted)", fontFamily: "system-ui, sans-serif",
-            userSelect: "none", minWidth: 90, textAlign: "center" }}>
-            {date}
-          </span>
-          {isAdmin && (
-            <button onClick={() => setDate(d => offsetDate(d, 1))}
-              title="Next day (admin)"
-              style={{ background: "none", border: "none", cursor: "pointer",
-                fontSize: 16, lineHeight: 1, padding: "0 4px",
-                color: "var(--pd-ink-muted)", opacity: 0.7 }}>
-              ›
-            </button>
-          )}
-        </div>
-
-        {/* Band selector */}
         <div style={{ display: "flex", gap: 5, transform: "translateY(-2px)" }}>
           {BANDS.map(b => (
             <button
@@ -360,6 +359,7 @@ export default function Test3Page() {
             key={`${cell.id}-${cell.colSpan}-${cell.rowSpan}`}
             cell={cell}
             content={buildBandContent(content, band, date)}
+            navProps={cell.id === TITLE_CELL_ID ? navProps : undefined}
           />
         ))}
       </div>

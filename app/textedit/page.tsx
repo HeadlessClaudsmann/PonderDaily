@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 type Piece       = { type: string; title: string; body: string };
 type BandContent = Record<string, Piece>;
 type Band        = "6-8" | "9-12" | "13-16";
-type DayContent  = { theme: string; brief?: string } & Record<Band, BandContent>;
+type DayContent  = { theme: string; brief?: string; layoutName?: string } & Record<Band, BandContent>;
 
 type PromptEntry = {
   cellId: string; type: string; purpose: string; factual: boolean;
@@ -617,12 +617,20 @@ export default function TextEditPage() {
   const [view, setView]               = useState<"content" | "prompts">("content");
   const [showDupMenu, setShowDupMenu] = useState(false);
   const [rerollState, setRerollState] = useState<"idle" | "armed" | "running" | "error">("idle");
+  const [layoutNames, setLayoutNames] = useState<string[]>([]);
   const rerollTimerRef                 = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Load date list, prompts, and gd-sync bg colour once ───────────────────
   useEffect(() => {
     fetch("/api/content/list").then(r => r.json()).then(setDates).catch(() => {});
     fetch("/api/prompts").then(r => r.json()).then(setPrompts).catch(() => {});
+    fetch("/api/gd-sync", { cache: "no-store" })
+      .then(r => r.json())
+      .then(store => {
+        if (Array.isArray(store?.layouts))
+          setLayoutNames(store.layouts.map((l: { name: string }) => l.name));
+      })
+      .catch(() => {});
   }, []);
 
   // ── Load content when date changes ────────────────────────────────────────
@@ -860,6 +868,40 @@ export default function TextEditPage() {
                   color: DK.ink, width: "100%", resize: "vertical",
                   lineHeight: 1.6 }}
               />
+
+              {/* Layout assignment */}
+              {layoutNames.length > 0 && (
+                <>
+                  <div style={{ height: 1, background: DK.b0, margin: "4px 0" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <label style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em",
+                      textTransform: "uppercase", color: DK.muted, flexShrink: 0,
+                      fontFamily: "system-ui, sans-serif" }}>
+                      Grid layout
+                    </label>
+                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                      {layoutNames.map(name => {
+                        const active = (content.layoutName ?? layoutNames[0]) === name;
+                        return (
+                          <button key={name} onClick={() => {
+                            setContent(p => p ? { ...p, layoutName: name } : p);
+                            setSaveState("idle");
+                          }} style={{
+                            fontSize: 11, fontWeight: 700, padding: "3px 10px",
+                            borderRadius: 5, cursor: "pointer",
+                            border: `1px solid ${active ? DK.b2 : DK.b0}`,
+                            background: active ? DK.b1 : "transparent",
+                            color: active ? DK.ink : DK.muted,
+                            fontFamily: "system-ui, sans-serif",
+                          }}>
+                            {name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* ── Three band sections ───────────────────────────────── */}
